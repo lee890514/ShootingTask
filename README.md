@@ -79,3 +79,12 @@ The workflow uses `android-actions/setup-android@v4` and explicitly installs onl
 - `AndroidManifest.xml` 加入 `android.media.action.IMAGE_CAPTURE` 的 `<queries>` 宣告。
 - 拍照 Intent 額外附上 `ClipData` URI 授權，提高不同廠牌相機 App 接收 `EXTRA_OUTPUT` 的相容性。
 - 若裝置真的沒有任何 App 能處理拍照 Intent，才顯示「找不到可用的相機 App」。
+
+
+## v1.2 Android 16 相機相容性調整
+
+- 浮動相機按鈕現在開啟手機的「一般相機模式」，不再要求相機 App 把照片寫入 PhotoMission 提供的 URI。
+- 照片由你的相機 App 依照平常方式自行儲存，因此可避開部分 Android 16 / 廠牌相機在 capture-contract 儲存階段崩潰的問題。
+- 從相機返回 PhotoMission 後，App 會詢問「剛才是否完成今天的拍照任務？」。
+- 如果只是拍了其他東西，選「沒有，繼續提醒」即可，浮動任務會保留。
+- PhotoMission v1.2 不需要 CAMERA 或相片/儲存權限。

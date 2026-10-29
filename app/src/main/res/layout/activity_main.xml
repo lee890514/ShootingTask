@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center_horizontal">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="外出拍照任務"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:textColor="#111111"
+        android:layout_marginTop="28dp" />
+
+    <TextView
+        android:id="@+id/statusText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="目前沒有進行中的任務"
+        android:textSize="18sp"
+        android:textColor="#333333"
+        android:layout_marginTop="28dp"
+        android:padding="16dp"
+        android:background="#F1F1F1" />
+
+    <Button
+        android:id="@+id/startButton"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="開始外出拍照任務"
+        android:textSize="17sp"
+        android:layout_marginTop="28dp" />
+
+    <Button
+        android:id="@+id/stopButton"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="結束目前任務"
+        android:textSize="17sp"
+        android:layout_marginTop="12dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="開始後，畫面上會出現可拖曳的 📷。\n\n15 / 30 / 60 分鐘仍未完成時，按鈕會逐步放大。點擊它會開啟系統相機；每次拍完照片，系統都會詢問這張是否完成今天的任務。只有你確認完成後，任務模式才會關閉。"
+        android:textSize="15sp"
+        android:textColor="#555555"
+        android:lineSpacingExtra="4dp"
+        android:layout_marginTop="28dp" />
+
+</LinearLayout>

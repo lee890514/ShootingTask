@@ -71,3 +71,11 @@ targetSdk 刻意先使用 33，讓第一版前景服務不必處理 Android 14+ 
 
 ## GitHub Actions SDK setup note
 The workflow uses `android-actions/setup-android@v4` and explicitly installs only `platform-tools` during SDK setup. This avoids the removed legacy Android SDK `tools` package that can cause `Failed to find package 'tools'` on older setup-android configurations.
+
+
+## v1.1 Android 16 相機相容性修正
+
+- 移除以 `resolveActivity()` 判斷相機存在與否的前置阻擋，避免 Android 11+ package visibility 造成誤判。
+- `AndroidManifest.xml` 加入 `android.media.action.IMAGE_CAPTURE` 的 `<queries>` 宣告。
+- 拍照 Intent 額外附上 `ClipData` URI 授權，提高不同廠牌相機 App 接收 `EXTRA_OUTPUT` 的相容性。
+- 若裝置真的沒有任何 App 能處理拍照 Intent，才顯示「找不到可用的相機 App」。

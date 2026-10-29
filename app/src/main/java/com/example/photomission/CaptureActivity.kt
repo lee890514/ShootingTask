@@ -3,6 +3,8 @@ package com.example.photomission
 import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
+import android.content.ActivityNotFoundException
+import android.content.ClipData
 import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -75,14 +77,18 @@ class CaptureActivity : Activity() {
             addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
 
-        if (intent.resolveActivity(packageManager) == null) {
+        // Android 11+ 會限制 PackageManager 對其他 App 的可見性。
+        // 直接啟動標準相機 Intent，真的沒有相機可處理時再捕捉例外，
+        // 可避免 resolveActivity() 在 Android 16 等版本上誤判為 null。
+        intent.clipData = ClipData.newRawUri("PhotoMission photo", uri)
+
+        try {
+            startActivityForResult(intent, REQ_CAMERA)
+        } catch (_: ActivityNotFoundException) {
             deleteCurrentPhoto()
             Toast.makeText(this, "找不到可用的相機 App", Toast.LENGTH_LONG).show()
             finish()
-            return
         }
-
-        startActivityForResult(intent, REQ_CAMERA)
     }
 
     @Deprecated("Deprecated in Android SDK, intentionally used to avoid AndroidX dependency")

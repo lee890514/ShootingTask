@@ -1,31 +1,64 @@
 package com.example.photomission
 
-import android.app.Activity
+import android.Manifest
 import android.app.AlertDialog
-import android.content.ActivityNotFoundException
+import android.content.ContentValues
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.provider.MediaStore
+import android.widget.Button
+import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.Preview
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.concurrent.Executor
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 /**
- * v1.2 camera flow:
+ * v1.3: PhotoMission owns the camera UI using Google's official CameraX libraries.
  *
- * Open the phone's ordinary camera UI and let that camera app own capture + storage.
- * PhotoMission does not provide EXTRA_OUTPUT, a FileProvider URI, or a MediaStore destination.
- *
- * When the user leaves the camera and comes back, ask whether the task was completed.
- * This is intentional: the user may have taken an unrelated picture, so returning from camera
- * never auto-completes the mission.
+ * This deliberately avoids launching the phone vendor's external Camera app. On the user's
+ * Android 16 device, that camera app hangs/crashes when launched through external camera intents.
+ * Captures are saved directly to Pictures/PhotoMission, then the user decides whether the photo
+ * completes the mission.
  */
-class CaptureActivity : Activity() {
+class CaptureActivity : ComponentActivity() {
 
-    companion object {
-        private const val REQ_NORMAL_CAMERA = 4201
-    }
+    private lateinit var previewView: PreviewView
+    private lateinit var shutterButton: Button
+    private lateinit var switchCameraButton: Button
+    private lateinit var statusText: TextView
+    private lateinit var cameraExecutor: ExecutorService
 
-    private var cameraLaunched = false
-    private var dialogShown = false
+    private var imageCapture: ImageCapture? = null
+    private var cameraProvider: ProcessCameraProvider? = null
+    private var lensFacing = CameraSelector.LENS_FACING_BACK
+    private var dialogVisible = false
+    private val uiExecutor = Executor { command -> runOnUiThread(command) }
+
+    private val cameraPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) {
+                startCamera()
+            } else {
+                Toast.makeText(this, "需要相機權限才能拍照", Toast.LENGTH_LONG).show()
+                finish()
+            }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,62 +69,160 @@ class CaptureActivity : Activity() {
             return
         }
 
-        cameraLaunched = savedInstanceState?.getBoolean("cameraLaunched", false) ?: false
-        dialogShown = savedInstanceState?.getBoolean("dialogShown", false) ?: false
+        setContentView(R.layout.activity_capture)
 
-        if (!cameraLaunched && !dialogShown) {
-            launchNormalCamera()
+        previewView = findViewById(R.id.previewView)
+        shutterButton = findViewById(R.id.shutterButton)
+        switchCameraButton = findViewById(R.id.switchCameraButton)
+        statusText = findViewById(R.id.cameraStatus)
+        val backButton: Button = findViewById(R.id.backButton)
+
+        cameraExecutor = Executors.newSingleThreadExecutor()
+
+        backButton.setOnClickListener { finish() }
+        shutterButton.setOnClickListener { takePhoto() }
+        switchCameraButton.setOnClickListener {
+            lensFacing = if (lensFacing == CameraSelector.LENS_FACING_BACK) {
+                CameraSelector.LENS_FACING_FRONT
+            } else {
+                CameraSelector.LENS_FACING_BACK
+            }
+            bindCameraUseCases()
+        }
+
+        if (checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            startCamera()
+        } else {
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
         }
     }
 
-    override fun onSaveInstanceState(outState: Bundle) {
-        outState.putBoolean("cameraLaunched", cameraLaunched)
-        outState.putBoolean("dialogShown", dialogShown)
-        super.onSaveInstanceState(outState)
+    private fun startCamera() {
+        statusText.text = "正在啟動相機…"
+        val providerFuture = ProcessCameraProvider.getInstance(this)
+        providerFuture.addListener({
+            try {
+                cameraProvider = providerFuture.get()
+                bindCameraUseCases()
+            } catch (e: Exception) {
+                statusText.text = "相機啟動失敗"
+                Toast.makeText(this, "無法啟動相機：${e.message ?: "未知錯誤"}", Toast.LENGTH_LONG).show()
+                finish()
+            }
+        }, uiExecutor)
     }
 
-    private fun launchNormalCamera() {
-        cameraLaunched = true
+    private fun bindCameraUseCases() {
+        val provider = cameraProvider ?: return
 
-        // This opens the same still-photo mode the camera app normally uses.
-        // There is deliberately NO EXTRA_OUTPUT: the camera app saves photos exactly as usual.
-        val intent = Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA)
+        val selector = CameraSelector.Builder()
+            .requireLensFacing(lensFacing)
+            .build()
 
         try {
-            @Suppress("DEPRECATION")
-            startActivityForResult(intent, REQ_NORMAL_CAMERA)
-        } catch (_: ActivityNotFoundException) {
-            cameraLaunched = false
-            Toast.makeText(this, "找不到可用的相機 App", Toast.LENGTH_LONG).show()
-            finish()
+            if (!provider.hasCamera(selector)) {
+                lensFacing = if (lensFacing == CameraSelector.LENS_FACING_BACK) {
+                    CameraSelector.LENS_FACING_FRONT
+                } else {
+                    CameraSelector.LENS_FACING_BACK
+                }
+                Toast.makeText(this, "這個鏡頭不可用", Toast.LENGTH_SHORT).show()
+                return
+            }
+
+            val preview = Preview.Builder().build().also {
+                it.surfaceProvider = previewView.surfaceProvider
+            }
+
+            imageCapture = ImageCapture.Builder()
+                .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                .build()
+
+            provider.unbindAll()
+            provider.bindToLifecycle(this, selector, preview, imageCapture)
+
+            shutterButton.isEnabled = true
+            statusText.text = if (lensFacing == CameraSelector.LENS_FACING_BACK) {
+                "後鏡頭"
+            } else {
+                "前鏡頭"
+            }
+        } catch (e: Exception) {
+            shutterButton.isEnabled = false
+            statusText.text = "相機設定失敗"
+            Toast.makeText(this, "無法使用相機：${e.message ?: "未知錯誤"}", Toast.LENGTH_LONG).show()
         }
     }
 
-    @Deprecated("Deprecated in Android SDK; used here without AndroidX dependencies")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode != REQ_NORMAL_CAMERA || dialogShown) return
+    private fun takePhoto() {
+        val capture = imageCapture ?: return
+        if (dialogVisible) return
 
-        // A normal camera app often returns RESULT_CANCELED even after photos were taken, because
-        // this intent is not a capture contract. We therefore never interpret resultCode.
-        dialogShown = true
-        showCompletionDialog()
+        shutterButton.isEnabled = false
+        statusText.text = "正在儲存照片…"
+
+        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.US).format(Date())
+        val displayName = "PhotoMission_$timestamp.jpg"
+
+        val outputOptions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val values = ContentValues().apply {
+                put(MediaStore.Images.Media.DISPLAY_NAME, displayName)
+                put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+                put(MediaStore.Images.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/PhotoMission")
+            }
+            ImageCapture.OutputFileOptions.Builder(
+                contentResolver,
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                values
+            ).build()
+        } else {
+            val dir = File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "PhotoMission").apply {
+                mkdirs()
+            }
+            ImageCapture.OutputFileOptions.Builder(File(dir, displayName)).build()
+        }
+
+        capture.takePicture(
+            outputOptions,
+            cameraExecutor,
+            object : ImageCapture.OnImageSavedCallback {
+                override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
+                    runOnUiThread {
+                        shutterButton.isEnabled = true
+                        statusText.text = "照片已儲存"
+                        showCompletionDialog()
+                    }
+                }
+
+                override fun onError(exception: ImageCaptureException) {
+                    runOnUiThread {
+                        shutterButton.isEnabled = true
+                        statusText.text = "拍照失敗"
+                        Toast.makeText(
+                            this@CaptureActivity,
+                            "照片儲存失敗：${exception.message ?: "未知錯誤"}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                }
+            }
+        )
     }
 
     private fun showCompletionDialog() {
-        if (isFinishing || !MissionState.isActive(this)) {
-            finish()
-            return
-        }
+        if (dialogVisible || isFinishing || !MissionState.isActive(this)) return
+        dialogVisible = true
 
         AlertDialog.Builder(this)
             .setTitle("外出拍照任務")
-            .setMessage("剛才在相機裡有完成今天「至少幫她拍一張照片」的任務嗎？")
+            .setMessage("剛才這張照片有完成今天「至少幫她拍一張照片」的任務嗎？")
             .setCancelable(false)
             .setNegativeButton("沒有，繼續提醒") { _, _ ->
-                finish()
+                dialogVisible = false
+                statusText.text = if (lensFacing == CameraSelector.LENS_FACING_BACK) "後鏡頭" else "前鏡頭"
             }
             .setPositiveButton("有，完成任務") { _, _ ->
+                dialogVisible = false
                 MissionState.finish(this)
                 val serviceIntent = Intent(this, MissionService::class.java).apply {
                     action = MissionService.ACTION_FINISH
@@ -101,5 +232,11 @@ class CaptureActivity : Activity() {
                 finish()
             }
             .show()
+    }
+
+    override fun onDestroy() {
+        cameraProvider?.unbindAll()
+        if (::cameraExecutor.isInitialized) cameraExecutor.shutdown()
+        super.onDestroy()
     }
 }

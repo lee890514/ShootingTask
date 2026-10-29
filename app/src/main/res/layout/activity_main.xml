@@ -45,7 +45,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="開始後，畫面上會出現可拖曳的 📷。\n\n15 / 30 / 60 分鐘仍未完成時，按鈕會逐步放大。點擊它會開啟系統相機；每次拍完照片，系統都會詢問這張是否完成今天的任務。只有你確認完成後，任務模式才會關閉。"
+        android:text="開始後，畫面上會出現可拖曳的 📷。\n\n15 / 30 / 60 分鐘仍未完成時，按鈕會逐步放大。點擊它會開啟 PhotoMission 內建相機；每次拍完照片，都會詢問這張是否完成今天的任務。只有你確認完成後，任務模式才會關閉。"
         android:textSize="15sp"
         android:textColor="#555555"
         android:lineSpacingExtra="4dp"

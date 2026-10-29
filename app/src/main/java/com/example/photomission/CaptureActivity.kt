@@ -29,7 +29,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 /**
- * v1.3: PhotoMission owns the camera UI using Google's official CameraX libraries.
+ * v1.3.1: PhotoMission owns the camera UI using Google's official CameraX libraries.
  *
  * This deliberately avoids launching the phone vendor's external Camera app. On the user's
  * Android 16 device, that camera app hangs/crashes when launched through external camera intents.

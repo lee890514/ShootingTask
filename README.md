@@ -35,3 +35,7 @@ GitHub Actions 會自動下載 Android SDK、Gradle 與 CameraX；本機不需�
 
 - v1.3 新增 Google 官方 Jetpack CameraX 1.5.3 dependency；GitHub Actions 會自動下載，不需要手動安裝任何套件。
 - Android 10 以上照片直接寫入 `Pictures/PhotoMission`，不需要儲存權限。
+
+## v1.3.1
+- 修正 GitHub Actions 編譯失敗：啟用 AndroidX (`android.useAndroidX=true`)。
+- 開啟 Jetifier 以提高舊式相依套件相容性。

@@ -1,41 +1,35 @@
-# PhotoMission v1.3
+# TaskMode v1.3.2
 
-Android 外出拍照任務 App。
+Android 任務模式 App。
 
-## v1.3 重點
+## 本版功能
 
-- 專為 Android 16 外部相機 Intent 相容性問題改版。
-- 不再呼叫手機廠商的相機 App。
-- 使用 Google 官方 CameraX 在 PhotoMission 內直接顯示相機預覽與快門。
-- 照片儲存至系統相簿 `Pictures/PhotoMission`。
-- 每拍一張都詢問「這張有完成今天的任務嗎？」；選「沒有」可留在相機繼續拍。
-- 任務仍由手動開啟、浮動 📷、15/30/60 分鐘逐步放大與前景服務維持。
+- 手動開始／結束任務。
+- 任務進行時顯示可拖曳的浮動快捷按鈕。
+- 15 / 30 / 60 分鐘未完成時，浮動按鈕逐步放大。
+- 使用 Google 官方 CameraX 執行內建操作介面。
+- 產生的檔案儲存至系統相簿 `Pictures/TaskMode`。
+- 每次執行後只詢問「任務完成了嗎？」；選「尚未完成」可繼續。
+- 前景服務維持任務狀態。
 
-## GitHub Actions 產 APK
+## GitHub Actions 建置 APK
 
-1. 將整個專案上傳到 GitHub repository（Public 可避免私人 Actions 額度問題）。
-2. 開啟 `Actions` → `Build APK` → `Run workflow`。
-3. 成功後進入該次 workflow run，於最下方 `Artifacts` 下載 `PhotoMission-debug-apk`。
+1. 把整個專案上傳到 GitHub repository。
+2. 到 `Actions` → `Build APK` → `Run workflow`。
+3. 成功後進入該次 workflow run，於最下方 `Artifacts` 下載 `TaskMode-debug-apk`。
 4. 解壓後安裝 `app-debug.apk`。
 
-GitHub Actions 會自動下載 Android SDK、Gradle 與 CameraX；本機不需要 Android Studio。
+## 使用
 
-## 第一次使用
+1. 開啟「任務模式」。
+2. 按「開始任務」。
+3. 第一次使用時允許「顯示在其他應用程式上層」、通知與相機權限。
+4. 任務進行中，點浮動快捷按鈕執行。
+5. 完成操作後選：
+   - `完成`：結束任務。
+   - `尚未完成`：任務保持，可繼續執行。
 
-1. 開啟 PhotoMission。
-2. 按「開始外出拍照任務」。
-3. 允許「顯示在其他 App 上層」。
-4. Android 13+ 建議允許通知。
-5. 第一次點浮動 📷 進入內建相機時，允許 Camera 權限。
-6. 拍照後選：
-   - `有，完成任務`：結束任務。
-   - `沒有，繼續提醒`：任務保持，並留在相機畫面可再拍。
+## 備註
 
-## 注意
-
-- v1.3 新增 Google 官方 Jetpack CameraX 1.5.3 dependency；GitHub Actions 會自動下載，不需要手動安裝任何套件。
-- Android 10 以上照片直接寫入 `Pictures/PhotoMission`，不需要儲存權限。
-
-## v1.3.1
-- 修正 GitHub Actions 編譯失敗：啟用 AndroidX (`android.useAndroidX=true`)。
-- 開啟 Jetifier 以提高舊式相依套件相容性。
+- Android 10 以上檔案直接寫入 `Pictures/TaskMode`，不需要額外儲存權限。
+- Application ID 保持 `com.example.photomission`，因此可直接覆蓋安裝舊版。

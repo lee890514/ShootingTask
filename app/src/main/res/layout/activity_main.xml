@@ -9,7 +9,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="外出拍照任務"
+        android:text="任務模式"
         android:textSize="28sp"
         android:textStyle="bold"
         android:textColor="#111111"
@@ -30,7 +30,7 @@
         android:id="@+id/startButton"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:text="開始外出拍照任務"
+        android:text="開始任務"
         android:textSize="17sp"
         android:layout_marginTop="28dp" />
 
@@ -45,7 +45,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="開始後，畫面上會出現可拖曳的 📷。\n\n15 / 30 / 60 分鐘仍未完成時，按鈕會逐步放大。點擊它會開啟 PhotoMission 內建相機；每次拍完照片，都會詢問這張是否完成今天的任務。只有你確認完成後，任務模式才會關閉。"
+        android:text="開始後，畫面上會出現可拖曳的快捷按鈕。\n\n15 / 30 / 60 分鐘仍未完成時，按鈕會逐步放大。每次執行後都會詢問任務是否完成；只有你確認完成後，任務模式才會關閉。"
         android:textSize="15sp"
         android:textColor="#555555"
         android:lineSpacingExtra="4dp"

@@ -39,7 +39,7 @@ class MainActivity : Activity() {
 
             AlertDialog.Builder(this)
                 .setTitle("結束任務？")
-                .setMessage("照片任務尚未確認完成。確定要手動結束嗎？")
+                .setMessage("任務尚未確認完成。確定要手動結束嗎？")
                 .setNegativeButton("取消", null)
                 .setPositiveButton("確定結束") { _, _ -> finishMission() }
                 .show()
@@ -77,7 +77,7 @@ class MainActivity : Activity() {
     private fun requestOverlayPermission() {
         AlertDialog.Builder(this)
             .setTitle("需要顯示在其他 App 上層")
-            .setMessage("外出任務需要顯示常駐的浮動 📷。下一頁請允許「顯示在其他應用程式上層」，回到 App 後再按一次開始。")
+            .setMessage("任務模式需要顯示常駐的浮動按鈕。下一頁請允許「顯示在其他應用程式上層」，回到 App 後再按一次開始。")
             .setPositiveButton("前往設定") { _, _ ->
                 val intent = Intent(
                     Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
@@ -101,7 +101,7 @@ class MainActivity : Activity() {
         if (MissionState.isActive(this)) {
             val minutes = ((System.currentTimeMillis() - MissionState.startedAt(this)) / 60_000L)
                 .coerceAtLeast(0)
-            statusText.text = "📷 任務進行中 · 已經過 ${minutes} 分鐘"
+            statusText.text = "任務進行中 · 已經過 ${minutes} 分鐘"
         } else {
             statusText.text = "目前沒有進行中的任務"
         }

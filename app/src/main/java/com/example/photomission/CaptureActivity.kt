@@ -29,12 +29,12 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 /**
- * v1.3.1: PhotoMission owns the camera UI using Google's official CameraX libraries.
+ * v1.3.2: the app owns the camera UI using Google's official CameraX libraries.
  *
  * This deliberately avoids launching the phone vendor's external Camera app. On the user's
  * Android 16 device, that camera app hangs/crashes when launched through external camera intents.
- * Captures are saved directly to Pictures/PhotoMission, then the user decides whether the photo
- * completes the mission.
+ * Captures are saved directly to Pictures/TaskMode, then the user decides whether the task
+ * is complete.
  */
 class CaptureActivity : ComponentActivity() {
 
@@ -55,7 +55,7 @@ class CaptureActivity : ComponentActivity() {
             if (granted) {
                 startCamera()
             } else {
-                Toast.makeText(this, "需要相機權限才能拍照", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "需要相機權限才能執行任務", Toast.LENGTH_LONG).show()
                 finish()
             }
         }
@@ -98,15 +98,15 @@ class CaptureActivity : ComponentActivity() {
     }
 
     private fun startCamera() {
-        statusText.text = "正在啟動相機…"
+        statusText.text = "正在準備…"
         val providerFuture = ProcessCameraProvider.getInstance(this)
         providerFuture.addListener({
             try {
                 cameraProvider = providerFuture.get()
                 bindCameraUseCases()
             } catch (e: Exception) {
-                statusText.text = "相機啟動失敗"
-                Toast.makeText(this, "無法啟動相機：${e.message ?: "未知錯誤"}", Toast.LENGTH_LONG).show()
+                statusText.text = "啟動失敗"
+                Toast.makeText(this, "無法啟動：${e.message ?: "未知錯誤"}", Toast.LENGTH_LONG).show()
                 finish()
             }
         }, uiExecutor)
@@ -126,7 +126,7 @@ class CaptureActivity : ComponentActivity() {
                 } else {
                     CameraSelector.LENS_FACING_BACK
                 }
-                Toast.makeText(this, "這個鏡頭不可用", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "目前不可用", Toast.LENGTH_SHORT).show()
                 return
             }
 
@@ -149,8 +149,8 @@ class CaptureActivity : ComponentActivity() {
             }
         } catch (e: Exception) {
             shutterButton.isEnabled = false
-            statusText.text = "相機設定失敗"
-            Toast.makeText(this, "無法使用相機：${e.message ?: "未知錯誤"}", Toast.LENGTH_LONG).show()
+            statusText.text = "設定失敗"
+            Toast.makeText(this, "無法使用：${e.message ?: "未知錯誤"}", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -159,16 +159,16 @@ class CaptureActivity : ComponentActivity() {
         if (dialogVisible) return
 
         shutterButton.isEnabled = false
-        statusText.text = "正在儲存照片…"
+        statusText.text = "正在處理…"
 
         val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.US).format(Date())
-        val displayName = "PhotoMission_$timestamp.jpg"
+        val displayName = "Task_$timestamp.jpg"
 
         val outputOptions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val values = ContentValues().apply {
                 put(MediaStore.Images.Media.DISPLAY_NAME, displayName)
                 put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-                put(MediaStore.Images.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/PhotoMission")
+                put(MediaStore.Images.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/TaskMode")
             }
             ImageCapture.OutputFileOptions.Builder(
                 contentResolver,
@@ -176,7 +176,7 @@ class CaptureActivity : ComponentActivity() {
                 values
             ).build()
         } else {
-            val dir = File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "PhotoMission").apply {
+            val dir = File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "TaskMode").apply {
                 mkdirs()
             }
             ImageCapture.OutputFileOptions.Builder(File(dir, displayName)).build()
@@ -189,7 +189,7 @@ class CaptureActivity : ComponentActivity() {
                 override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
                     runOnUiThread {
                         shutterButton.isEnabled = true
-                        statusText.text = "照片已儲存"
+                        statusText.text = "已完成處理"
                         showCompletionDialog()
                     }
                 }
@@ -197,10 +197,10 @@ class CaptureActivity : ComponentActivity() {
                 override fun onError(exception: ImageCaptureException) {
                     runOnUiThread {
                         shutterButton.isEnabled = true
-                        statusText.text = "拍照失敗"
+                        statusText.text = "操作失敗"
                         Toast.makeText(
                             this@CaptureActivity,
-                            "照片儲存失敗：${exception.message ?: "未知錯誤"}",
+                            "處理失敗：${exception.message ?: "未知錯誤"}",
                             Toast.LENGTH_LONG
                         ).show()
                     }
@@ -214,21 +214,21 @@ class CaptureActivity : ComponentActivity() {
         dialogVisible = true
 
         AlertDialog.Builder(this)
-            .setTitle("外出拍照任務")
-            .setMessage("剛才這張照片有完成今天「至少幫她拍一張照片」的任務嗎？")
+            .setTitle("任務確認")
+            .setMessage("任務完成了嗎？")
             .setCancelable(false)
-            .setNegativeButton("沒有，繼續提醒") { _, _ ->
+            .setNegativeButton("尚未完成") { _, _ ->
                 dialogVisible = false
                 statusText.text = if (lensFacing == CameraSelector.LENS_FACING_BACK) "後鏡頭" else "前鏡頭"
             }
-            .setPositiveButton("有，完成任務") { _, _ ->
+            .setPositiveButton("完成") { _, _ ->
                 dialogVisible = false
                 MissionState.finish(this)
                 val serviceIntent = Intent(this, MissionService::class.java).apply {
                     action = MissionService.ACTION_FINISH
                 }
                 startService(serviceIntent)
-                Toast.makeText(this, "今天的拍照任務已完成", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "任務已完成", Toast.LENGTH_SHORT).show()
                 finish()
             }
             .show()

@@ -179,7 +179,7 @@ class MissionService : Service() {
             else -> 56
         }
 
-        view.text = if (minutes >= 60) "📷\n還沒拍" else "📷"
+        view.text = if (minutes >= 60) "📷\n未完成" else "📷"
         view.textSize = when {
             minutes >= 60 -> 22f
             minutes >= 30 -> 44f
@@ -210,7 +210,7 @@ class MissionService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "外出拍照任務",
+                "任務模式",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
                 description = "任務進行中時維持背景服務"
@@ -248,11 +248,11 @@ class MissionService : Service() {
 
         return Notification.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_camera)
-            .setContentTitle("📷 外出拍照任務進行中")
+            .setContentTitle("任務進行中")
             .setContentText("尚未確認完成 · ${minutes} 分鐘")
             .setOngoing(true)
             .setContentIntent(mainPending)
-            .addAction(android.R.drawable.ic_menu_camera, "拍照", cameraPending)
+            .addAction(android.R.drawable.ic_menu_camera, "執行", cameraPending)
             .addAction(android.R.drawable.ic_menu_close_clear_cancel, "結束", finishPending)
             .build()
     }

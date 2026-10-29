@@ -68,3 +68,6 @@ targetSdk 刻意先使用 33，讓第一版前景服務不必處理 Android 14+ 
 這個 App 的目的不是假設你「下次一定會記得」，而是讓未完成任務留在外部環境中：
 
 > 可以延後，但不能因為注意力切換就消失。
+
+## GitHub Actions SDK setup note
+The workflow uses `android-actions/setup-android@v4` and explicitly installs only `platform-tools` during SDK setup. This avoids the removed legacy Android SDK `tools` package that can cause `Failed to find package 'tools'` on older setup-android configurations.
